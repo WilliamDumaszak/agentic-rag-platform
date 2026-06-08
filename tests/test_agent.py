@@ -8,7 +8,7 @@ import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -56,7 +56,7 @@ def test_retrieve_node(mock_build_retriever):
 
 # ── web search node ───────────────────────────────────────────────────────────
 
-@patch("agent.nodes.DuckDuckGoSearchAPIWrapper")
+@patch("langchain_community.utilities.DuckDuckGoSearchAPIWrapper")
 def test_web_search_node(mock_search_cls):
     mock_search = MagicMock()
     mock_search.run.return_value = "Latest news about logistics..."
@@ -70,7 +70,7 @@ def test_web_search_node(mock_search_cls):
     assert result.source == "web"
 
 
-@patch("agent.nodes.DuckDuckGoSearchAPIWrapper")
+@patch("langchain_community.utilities.DuckDuckGoSearchAPIWrapper")
 @patch("agent.nodes._build_retriever")
 def test_web_search_fallback_to_retrieve(mock_build_retriever, mock_search_cls):
     mock_search = MagicMock()
