@@ -1,0 +1,28 @@
+langchain-community>=0.3.0
+langchain-core>=0.3.0
+langchain-chroma>=0.1.4
+langchain-huggingface>=0.1.0
+langchain-openai>=0.3.0
+langgraph>=0.3.0
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+duckduckgo-search>=8.0.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.0
+PyYAML>=6.0
+numpy>=1.26.0
+scikit-learn>=1.6.0
+pytest>=8.3.0
+httpx>=0.28.0
+# Azure
+azure-search-documents>=11.4.0
+azure-identity>=1.17.0
+azure-ai-documentintelligence>=1.0.0
+# Document Intelligence (local mode)
+pymupdf>=1.24.0
+# Hybrid retrieval (BM25 local mode)
+rank-bm25>=0.2.2
+# Evaluation
+ragas>=0.2.0
+datasets>=2.0.0

@@ -1,0 +1,48 @@
+services:
+
+  # ── Ollama — local LLM server ──────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434"]
+      interval: 15s
+      retries: 5
+
+  # ── pull model on first run ────────────────────────────────────────────────
+  ollama-pull:
+    image: ollama/ollama:latest
+    entrypoint: ["ollama", "pull", "llama3.2"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    profiles:
+      - setup
+
+  # ── Agentic RAG API ────────────────────────────────────────────────────────
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - ./vectordb:/app/vectordb
+      - ./documents:/app/documents
+      - ./evaluation:/app/evaluation
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      retries: 3
+
+volumes:
+  ollama_models:

@@ -1,0 +1,85 @@
+llm:
+  provider: "ollama"           # "ollama" | "openai" | "azure_openai"
+  model: "llama3.2"
+  ollama_base_url: "http://ollama:11434"
+  temperature: 0.3
+  max_tokens: 512
+  # Azure OpenAI — active when provider: azure_openai (set via env vars)
+  azure_openai_endpoint: ""    # AZURE_OPENAI_ENDPOINT
+  azure_openai_deployment: "gpt-4o-mini"
+  azure_openai_api_version: "2024-02-01"
+
+embeddings:
+  model: "BAAI/bge-base-en"
+  device: "cpu"
+  normalize: true
+
+vectordb:
+  provider: "chroma"           # "chroma" | "azure_search"
+  persist_directory: "vectordb"
+  collection_name: "documents"
+  # Azure AI Search — active when provider: azure_search (set via env vars)
+  azure_search_endpoint: ""    # AZURE_SEARCH_ENDPOINT
+  azure_search_index: "rag-documents"
+
+ingestion:
+  chunk_size: 500
+  chunk_overlap: 50
+  documents_dir: "documents"
+
+agent:
+  n_responses: 5              # number of response variants to generate and rank
+  confidence_threshold: 0.3   # min confidence score to accept a ranked response
+  web_search_keywords:
+    - "pesquise"
+    - "recente"
+    - "notícia"
+    - "search"
+    - "latest"
+    - "news"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+
+reranking:
+  enabled: true
+  model: "cross-encoder/ms-marco-MiniLM-L-6-v2"  # 22M params, fast on CPU
+  top_k: 3                                        # docs kept after reranking
+
+guardrails:
+  max_input_length: 1000
+  block_pii_in_output: true
+
+evaluation:
+  ground_truth_path: "evaluation/ground_truth.json"
+
+# ── Document Intelligence ─────────────────────────────────────────────────────
+# Local:  PyMuPDF (fast, offline, digital PDFs only)
+# Azure:  Azure Document Intelligence — handles scanned docs, tables, handwriting
+document_intelligence:
+  provider: "local"                          # "local" | "azure"
+  azure_endpoint: ""                         # AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT
+  azure_model_id: "prebuilt-layout"          # or custom model ID from Azure portal
+  supported_types: [".pdf", ".txt", ".md"]
+
+# ── Hybrid Retrieval ──────────────────────────────────────────────────────────
+# dense:         vector-only (original behavior, default)
+# local:         BM25 (keyword) + vector fused via Reciprocal Rank Fusion
+# azure:         Azure AI Search native hybrid + semantic re-ranking
+retrieval:
+  provider: "local"                          # "local" | "azure"
+  top_k: 5                                   # results returned after fusion
+  rrf_k: 60                                  # RRF constant (default 60, per original paper)
+  azure_semantic_config: "default"           # semantic config name in Azure Search portal
+
+# ── HITL Queue ────────────────────────────────────────────────────────────────
+# Low-confidence responses (confidence < agent.confidence_threshold) are stored
+# here for human review before being served.
+# Local: SQLite file (zero infra). Production: replace with PostgreSQL.
+hitl:
+  db_path: "hitl_queue.db"
+
+# ── Prompt Versioning ─────────────────────────────────────────────────────────
+prompts:
+  active_version: "v2"                       # which prompts/*.yaml is used at runtime

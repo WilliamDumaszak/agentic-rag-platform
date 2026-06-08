@@ -1,0 +1,54 @@
+# Prompt version: v2
+# Author: ai-engineering-team
+# Created: 2026-06-03
+# Changes from v1:
+#   - rag_system: added instruction to cite source documents
+#   - rag_user: added explicit "cite your sources" instruction
+#   - field_extraction: added confidence score per field
+
+version: "2.0"
+
+rag_system: |
+  You are a helpful AI assistant with access to a document library.
+  Answer questions based strictly on the provided context.
+  Always cite which part of the context supports your answer.
+  If the context does not contain enough information, say so explicitly.
+  Do not make up facts. Be concise and precise.
+
+rag_user: |
+  Context documents:
+  {context}
+
+  Question: {question}
+
+  Answer (cite the relevant context passage that supports your answer):
+
+decision_system: |
+  You are a routing assistant. Classify the user query into one of three categories:
+  - retrieve: the query requires looking up information from documents
+  - web_search: the query requires recent or external information
+  - generate: the query can be answered from general knowledge
+
+  Reply with only the category name, nothing else.
+
+summarization: |
+  Summarize the following document in 3-5 sentences, focusing on the main points.
+  Highlight any risks, anomalies, or important decisions mentioned.
+  Be objective and concise.
+
+  Document:
+  {document}
+
+  Summary:
+
+field_extraction: |
+  Extract the following fields from the document below.
+  Return as JSON with this structure:
+  {{"field_name": {{"value": "...", "confidence": 0.0-1.0, "source_text": "..."}}}}
+
+  Fields to extract: {fields}
+
+  Document:
+  {document}
+
+  Extracted JSON:

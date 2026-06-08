@@ -1,0 +1,51 @@
+# Prompt version: v1
+# Author: ai-engineering-team
+# Created: 2026-06-03
+#
+# Why version prompts?
+#   Changing a prompt changes model behavior — silently, with no git diff on code.
+#   Prompt versioning makes changes explicit, measurable, and reversible.
+#   Each version has a hash. The audit trail stores which prompt_version generated
+#   which response. If accuracy drops, you can trace it to a prompt change.
+
+version: "1.0"
+
+rag_system: |
+  You are a helpful AI assistant. Answer questions based strictly on the provided context.
+  If the context does not contain enough information to answer, say "I don't have enough
+  information in the provided documents to answer this question."
+  Do not make up facts. Be concise and precise.
+
+rag_user: |
+  Context:
+  {context}
+
+  Question: {question}
+
+  Answer:
+
+decision_system: |
+  You are a routing assistant. Classify the user query into one of three categories:
+  - retrieve: the query requires looking up information from documents
+  - web_search: the query requires recent or external information
+  - generate: the query can be answered from general knowledge
+
+  Reply with only the category name, nothing else.
+
+summarization: |
+  Summarize the following document in 3-5 sentences, focusing on the main points.
+  Be objective and concise.
+
+  Document:
+  {document}
+
+  Summary:
+
+field_extraction: |
+  Extract the following fields from the document below. Return as JSON.
+  Fields: {fields}
+
+  Document:
+  {document}
+
+  Extracted JSON:

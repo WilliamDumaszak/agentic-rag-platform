@@ -1,0 +1,122 @@
+name: Agentic RAG Platform
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional image tag override"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/agentic-rag-platform
+
+jobs:
+
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+  build-and-push:
+    name: Build & Push
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      AZURE_ACR_REGISTRY: ${{ secrets.AZURE_ACR_REGISTRY }}
+      HAS_OIDC: ${{ secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_TENANT_ID != '' && secrets.AZURE_SUBSCRIPTION_ID != '' }}
+      HAS_AZURE_CREDS_JSON: ${{ secrets.AZURE_CREDENTIALS != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Docker Hub (local/default registry) ──────────────────────────────
+      - name: Log in to Docker Hub
+        if: env.DOCKER_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push to Docker Hub
+        if: env.DOCKER_USERNAME != ''
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Resolve image tag
+        id: image_tag
+        shell: bash
+        run: |
+          TAG="${{ github.sha }}"
+          if [[ -n "${{ github.event.inputs.image_tag }}" ]]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      # ── Azure Container Registry ───────────────────────────────────────────
+      - name: Azure login (OIDC)
+        if: env.AZURE_ACR_REGISTRY != '' && env.HAS_OIDC == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Azure login (AZURE_CREDENTIALS)
+        if: env.AZURE_ACR_REGISTRY != '' && env.HAS_OIDC != 'true' && env.HAS_AZURE_CREDS_JSON == 'true'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR login via Azure CLI
+        if: env.AZURE_ACR_REGISTRY != '' && (env.HAS_AZURE_CREDS_JSON == 'true' || env.HAS_OIDC == 'true')
+        shell: bash
+        run: |
+          REGISTRY="${{ secrets.AZURE_ACR_REGISTRY }}"
+          REG_NAME="${REGISTRY%%.azurecr.io}"
+          az acr login --name "$REG_NAME"
+
+      - name: Log in to Azure Container Registry
+        if: env.AZURE_ACR_REGISTRY != '' && env.HAS_AZURE_CREDS_JSON != 'true' && env.HAS_OIDC != 'true'
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ secrets.AZURE_ACR_REGISTRY }}
+          username: ${{ secrets.AZURE_ACR_USERNAME }}
+          password: ${{ secrets.AZURE_ACR_PASSWORD }}
+
+      - name: Build and push to ACR
+        if: env.AZURE_ACR_REGISTRY != ''
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.AZURE_ACR_REGISTRY }}/agentic-rag-platform:latest
+            ${{ secrets.AZURE_ACR_REGISTRY }}/agentic-rag-platform:${{ steps.image_tag.outputs.tag }}
