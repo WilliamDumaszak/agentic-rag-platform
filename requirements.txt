@@ -1,5 +1,6 @@
 langchain-community>=0.3.0
 langchain-core>=0.3.0
+langchain-text-splitters>=0.3.0
 langchain-chroma>=0.1.4
 langchain-huggingface>=0.1.0
 langchain-openai>=0.3.0
@@ -9,7 +10,9 @@ sentence-transformers>=3.0.0
 duckduckgo-search>=8.0.0
 fastapi>=0.115.0
 uvicorn[standard]>=0.34.0
+python-multipart>=0.0.9
 pydantic>=2.10.0
+jq>=1.6.0
 PyYAML>=6.0
 numpy>=1.26.0
 scikit-learn>=1.6.0

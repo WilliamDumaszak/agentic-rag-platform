@@ -173,7 +173,7 @@ def ingest_document(
     import shutil
     import tempfile
     from fastapi import UploadFile
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_chroma import Chroma
     from rag.ingestion import build_embedding_model
     from ingestion.document_intelligence import extract_document
@@ -293,9 +293,14 @@ def query_stream(request: QueryRequest):
         # 1. retrieve + rerank
         try:
             from agent.nodes import _build_retriever
+            from rag.hybrid_retriever import hybrid_retrieve
             from reranking.cross_encoder import rerank
-            retriever = _build_retriever()
-            docs = retriever.invoke(request.query)
+
+            docs = hybrid_retrieve(request.query)
+            if not docs:
+                retriever = _build_retriever()
+                docs = retriever.invoke(request.query)
+
             docs = rerank(request.query, docs)
             context = "\n".join(d.page_content for d in docs)
             sources = list({d.metadata.get("source", "unknown") for d in docs})

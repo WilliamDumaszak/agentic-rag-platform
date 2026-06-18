@@ -113,9 +113,20 @@ def decision_node(state: AgentState) -> AgentState:
 # ── retrieve ──────────────────────────────────────────────────────────────────
 
 def retrieve_node(state: AgentState) -> AgentState:
-    retriever = _build_retriever()
-    docs = retriever.invoke(state.query)
-    logger.info(f"Retrieved {len(docs)} documents.")
+    docs = []
+    try:
+        # Use the project hybrid retriever (BM25 + vector, or Azure native hybrid)
+        from rag.hybrid_retriever import hybrid_retrieve
+        docs = hybrid_retrieve(state.query)
+        logger.info(f"Retrieved {len(docs)} documents via hybrid retrieval.")
+    except Exception as exc:
+        logger.warning(f"Hybrid retrieval unavailable: {exc}")
+
+    # Compatibility fallback for environments/tests where hybrid retrieval is unavailable
+    if not docs:
+        retriever = _build_retriever()
+        docs = retriever.invoke(state.query)
+        logger.info(f"Retrieved {len(docs)} documents via base retriever fallback.")
 
     # cross-encoder reranking: re-scores (query, doc) pairs for higher precision
     try:

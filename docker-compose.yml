@@ -8,7 +8,7 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434"]
+      test: ["CMD", "ollama", "list"]
       interval: 15s
       retries: 5
 
@@ -40,7 +40,13 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5).read()",
+        ]
       interval: 20s
       retries: 3
 

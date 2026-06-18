@@ -18,7 +18,7 @@ import logging
 from typing import Any
 
 import yaml
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
 
